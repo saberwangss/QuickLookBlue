@@ -45,7 +45,7 @@ using WPFMediaKit.DirectShow.MediaPlayers;
 
 namespace QuickLook.Plugin.VideoViewer;
 
-public partial class ViewerPanel : UserControl, IDisposable, INotifyPropertyChanged
+public partial class ViewerPanel : UserControl, IDisposable, INotifyPropertyChanged,ISeekable
 {
     private readonly ContextObject _context;
     private BitmapSource _coverArt;
@@ -57,11 +57,36 @@ public partial class ViewerPanel : UserControl, IDisposable, INotifyPropertyChan
     private bool _isPlaying;
     private bool _wasPlaying;
     private bool _shouldLoop;
+    
+    private SeekManager _seekManager;
+    private double _volumeBeforeMute;
 
     public ViewerPanel(ContextObject context)
     {
         InitializeComponent();
         LoadAndInsertGlassLayer();
+        
+        _seekManager = new SeekManager(
+            executeSeekAction: seconds => PerformActualSeek(seconds),
+            setMuteAction: isMuted =>
+            {
+                if (mediaElement == null) return;
+                if (isMuted)
+                {
+                    // 静音时：保存当前音量，然后设置为0
+                    _volumeBeforeMute = this.LinearVolume;
+                    this.LinearVolume = 0;
+                }
+                else
+                {
+                    // 取消静音时：恢复之前的音量
+                    this.LinearVolume = _volumeBeforeMute;
+                }
+            },
+            // 通过判断音量是否接近0来确定是否为静音状态
+            getMuteAction: () => mediaElement != null && this.LinearVolume < 0.01
+        );
+
 
         // apply global theme
         Resources.MergedDictionaries[0].MergedDictionaries.Clear();
@@ -98,6 +123,7 @@ public partial class ViewerPanel : UserControl, IDisposable, INotifyPropertyChan
         };
 
         PreviewMouseWheel += (sender, e) => ChangeVolume((double)e.Delta / 120 * 0.04);
+        
     }
 
     private partial void LoadAndInsertGlassLayer();
@@ -197,7 +223,7 @@ public partial class ViewerPanel : UserControl, IDisposable, INotifyPropertyChan
             return;
 
         HasVideo = mediaElement.HasVideo;
-
+        _seekManager.SetMediaDuration(mediaElement.MediaDuration);
         _context.IsBusy = false;
     }
 
@@ -408,5 +434,35 @@ public partial class ViewerPanel : UserControl, IDisposable, INotifyPropertyChan
     protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    
+    public void SeekBackward(int seconds)
+    {
+        Debug.WriteLine($"ViewWindowManager SeekBackward: {seconds}");
+        _seekManager.RequestSeek(-seconds);
+    }
+
+    public void SeekForward(int seconds)
+    {
+        Debug.WriteLine($"ViewWindowManager SeekForward: {seconds}");
+        _seekManager.RequestSeek(seconds);
+    }
+    
+    
+    
+    private void PerformActualSeek(int seconds)
+    {
+        if (mediaElement == null) return;
+
+        long offset = (long)seconds * 10000000L;
+        var newPosition = mediaElement.MediaPosition + offset;
+        var duration = mediaElement.MediaDuration;
+
+        if (newPosition < 0) newPosition = 0;
+        if (duration > 0 && newPosition > duration) newPosition = duration;
+
+        mediaElement.MediaPosition = newPosition;
+        ShowViedoControlContainer(this, null);
     }
 }

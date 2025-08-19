@@ -46,7 +46,7 @@ internal class KeystrokeDispatcher : IDisposable
         _validKeys =
         [
             Keys.Up, Keys.Down, Keys.Left, Keys.Right,
-            Keys.Enter, Keys.Space, Keys.Escape
+            Keys.Enter, Keys.Space, Keys.Escape,Keys.A, Keys.D
         ];
     }
 
@@ -107,6 +107,11 @@ internal class KeystrokeDispatcher : IDisposable
         // must be hold for 750ms before releasing.
         if (_isPreviewRequest)
         {
+            if (e.KeyCode == Keys.D || e.KeyCode == Keys.A)
+            {
+                e.Handled = true;
+                Console.WriteLine("A or D pressed Handled! ");
+            }
             if (isKeyDown || e.KeyCode != Keys.Space ||
                 DateTime.Now.Ticks - _spaceHoldTick >= HOLD_TO_PREVIEW_DURATION)
                 InvokeRoutine(e.KeyCode, isKeyDown);
@@ -135,6 +140,15 @@ internal class KeystrokeDispatcher : IDisposable
                 case Keys.Space:
                     PipeServerManager.SendMessage(PipeMessages.Toggle);
                     break;
+                // 添加 A 键处理（后退）
+                case Keys.A:
+                    PipeServerManager.SendMessage(PipeMessages.SeekBackward); // 需要定义这个消息
+                    break;
+                
+                // 添加 D 键处理（前进）
+                case Keys.D:
+                    PipeServerManager.SendMessage(PipeMessages.SeekForward); // 需要定义这个消息
+                    break;
             }
         }
         else
@@ -154,6 +168,11 @@ internal class KeystrokeDispatcher : IDisposable
 
                 case Keys.Space:
                     PipeServerManager.SendMessage(PipeMessages.Toggle);
+                    break;
+                // 对于 A 和 D 键，释放时不需要额外处理
+                case Keys.A:
+                case Keys.D:
+                    // 保持空操作或添加日志
                     break;
             }
         }

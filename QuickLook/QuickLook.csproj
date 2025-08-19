@@ -147,6 +147,7 @@
     <ItemGroup>
         <Compile Include="..\GitVersion.cs">
             <Link>Properties\GitVersion.cs</Link>
+		    <Visible>true</Visible>  
         </Compile>
     </ItemGroup>
 

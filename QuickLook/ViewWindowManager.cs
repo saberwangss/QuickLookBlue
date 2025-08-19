@@ -73,6 +73,27 @@ internal class ViewWindowManager : IDisposable
         StopFocusMonitor();
         _viewerWindow.Close();
     }
+    public void SeekBackward()
+    {
+        Debug.WriteLine("ViewWindowManager SeekBackward");
+        if (_viewerWindow?.ContextObject?.ViewerContent is QuickLook.Common.Plugin.ISeekable seekable)
+        {
+            int seekStepSecond = SettingHelper.Get<int>("SeekStepSecond", 5);
+            seekable.SeekBackward(seekStepSecond);
+        }
+    }
+
+    public void SeekForward()
+    {
+        Debug.WriteLine("ViewWindowManager SeekForward");
+        if (_viewerWindow?.ContextObject?.ViewerContent is QuickLook.Common.Plugin.ISeekable seekable)
+        {
+            Debug.WriteLine("ViewWindowManager send event SeekForward");
+            int seekStepSecond = SettingHelper.Get<int>("SeekStepSecond", 5);
+            seekable.SeekForward(seekStepSecond);
+        }
+    }
+    
 
     public void TogglePreview(string path = null, string options = null)
     {

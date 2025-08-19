@@ -36,6 +36,8 @@ internal static class PipeMessages
     public const string Forget = "QuickLook.App.PipeMessages.Forget";
     public const string Close = "QuickLook.App.PipeMessages.Close";
     public const string Quit = "QuickLook.App.PipeMessages.Quit";
+    public const string SeekBackward = "QuickLook.App.PipeMessages.SeekBackward";
+    public const string SeekForward = "QuickLook.App.PipeMessages.SeekForward";
 }
 
 internal class PipeServerManager : IDisposable
@@ -160,7 +162,20 @@ internal class PipeServerManager : IDisposable
                     new Action(() => ViewWindowManager.GetInstance().ClosePreview()),
                     DispatcherPriority.ApplicationIdle);
                 return false;
+            // 添加对新消息的处理
+            case PipeMessages.SeekBackward:
+                Application.Current.Dispatcher.BeginInvoke(
+                    new Action(() => ViewWindowManager.GetInstance().SeekBackward()),
+                    DispatcherPriority.ApplicationIdle);
+                Debug.WriteLine("PipeServerManager received SeekBackward");
+                return false;
 
+            case PipeMessages.SeekForward:
+                Application.Current.Dispatcher.BeginInvoke(
+                    new Action(() => ViewWindowManager.GetInstance().SeekForward()),
+                    DispatcherPriority.ApplicationIdle);
+                Debug.WriteLine("PipeServerManager received SeekForward");
+                return false;
             case PipeMessages.Quit:
                 return true;
 
